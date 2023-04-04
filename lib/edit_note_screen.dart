@@ -24,6 +24,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
       HighlightColor.pink: Colors.pink,
       HighlightColor.blue: Colors.blue,
     };
+    _commentsController = TextEditingController();
   }
 
   @override
@@ -77,6 +78,29 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                     ),
                   );
                 }).toList(),
+              ),
+              SizedBox(height: 20),
+              TextField(
+                controller: _commentsController,
+                minLines: 1,
+                maxLines: null,
+                decoration: InputDecoration(
+                  hintText: 'Add a comment',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () {
+                  String comment = _commentsController.text.trim();
+                  if (comment.isNotEmpty) {
+                    setState(() {
+                      widget.note.comments.add(comment);
+                    });
+                    _commentsController.clear();
+                  }
+                },
+                child: Text('Add Comment'),
               ),
             ],
           ),
