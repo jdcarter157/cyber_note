@@ -14,7 +14,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
   late TextEditingController _contentController;
   late Map<HighlightColor, Color> _highlightColors;
   late TextEditingController _commentsController;
-  
+
   @override
   void initState() {
     super.initState();

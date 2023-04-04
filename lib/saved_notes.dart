@@ -11,7 +11,11 @@ class SavedNotesScreen extends StatefulWidget {
 
 class _SavedNotesScreenState extends State<SavedNotesScreen> {
   List<Note> _notes = [];
-
+  Map<HighlightColor, Color> _highlightColors = {
+    HighlightColor.yellow: Colors.yellow,
+    HighlightColor.pink: Colors.pinkAccent,
+    HighlightColor.blue: Colors.lightBlueAccent,
+  };
   @override
   void initState() {
     super.initState();
@@ -36,7 +40,10 @@ class _SavedNotesScreenState extends State<SavedNotesScreen> {
                 return Note(
                     id: now.millisecondsSinceEpoch.toString(),
                     title: now.toString(),
-                    content: noteJson);
+                    content: noteJson,
+                    highlightedPositions: {},
+                    comments: [],
+                    creationTime: now);
               }
             }
           })
@@ -63,45 +70,24 @@ class _SavedNotesScreenState extends State<SavedNotesScreen> {
         itemCount: _notes.length,
         itemBuilder: (BuildContext context, int index) {
           Note note = _notes[index];
+          String noteTitle =
+              note.title ?? _formatTimestamp(note.creationTime).toUpperCase();
           return Card(
             child: ListTile(
               title: Text(
-                note.title,
+                noteTitle,
                 style: TextStyle(color: Colors.black),
               ),
-              subtitle: RichText(
-                text: TextSpan(
-                  children: note.content
-                      .split('')
-                      .asMap()
-                      .entries
-                      .map(
-                        (entry) => TextSpan(
-                          text: entry.value,
-                          style: note.highlightedPositions
-                                  .containsKey(entry.key)
-                              ? TextStyle(
-                                  backgroundColor: () {
-                                    switch (
-                                        note.highlightedPositions[entry.key]) {
-                                      case HighlightColor.yellow:
-                                        return Colors.yellow;
-                                      case HighlightColor.pink:
-                                        return Colors.pink;
-                                      case HighlightColor.blue:
-                                        return Colors.blue;
-                                      default:
-                                        return Colors.yellow;
-                                    }
-                                  }(),
-                                  color: Colors.black,
-                                )
-                              : TextStyle(color: Colors.black),
-                        ),
-                      )
-                      .toList(),
-                  style: DefaultTextStyle.of(context).style,
-                ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text.rich(
+                    TextSpan(
+                      children: _getHighlightedTextSpans(note),
+                    ),
+                  ),
+                  ..._getCommentWidgets(note),
+                ],
               ),
               onTap: () async {
                 Note? updatedNote = await Navigator.push(
@@ -125,10 +111,14 @@ class _SavedNotesScreenState extends State<SavedNotesScreen> {
         onPressed: () async {
           DateTime now = DateTime.now();
           Note newNote = Note(
-            id: now.millisecondsSinceEpoch.toString(),
-            title: now.toString(),
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
             content: '',
+            highlightedPositions: {},
+            comments: [],
+            creationTime: now,
+            title: _formatTimestamp(now),
           );
+
           Note? updatedNote = await Navigator.push(
             context,
             MaterialPageRoute(
@@ -145,5 +135,65 @@ class _SavedNotesScreenState extends State<SavedNotesScreen> {
         child: Icon(Icons.add),
       ),
     );
+  }
+
+  List<InlineSpan> _getHighlightedTextSpans(Note note) {
+    List<InlineSpan> spans = [];
+    List<String> contentChars = note.content.split('');
+    Map<int, HighlightColor> highlightedPositions = note.highlightedPositions;
+    int startIndex = 0;
+    highlightedPositions.forEach((position, color) {
+      if (startIndex < position) {
+        spans.add(TextSpan(
+          text: contentChars.sublist(startIndex, position).join(),
+        ));
+      }
+      spans.add(TextSpan(
+        text: contentChars[position],
+        style: TextStyle(
+          backgroundColor: _highlightColors[color] ?? Colors.yellow,
+          color: Colors.black,
+        ),
+      ));
+      startIndex = position + 1;
+    });
+
+    if (startIndex < contentChars.length) {
+      spans.add(TextSpan(
+        text: contentChars.sublist(startIndex).join(),
+      ));
+    }
+
+    if (spans.isEmpty) {
+      spans.add(TextSpan(
+        text: note.content,
+      ));
+    }
+
+    return [TextSpan(text: 'Note: '), ...spans];
+  }
+
+  List<Widget> _getCommentWidgets(Note note) {
+    List<Widget> widgets = [];
+    for (String comment in note.comments) {
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4.0),
+          child: Text(comment),
+        ),
+      );
+    }
+    return widgets;
+  }
+
+  String _formatTimestamp(DateTime timestamp) {
+    String amPm = timestamp.hour < 12 ? 'AM' : 'PM';
+    int hour = timestamp.hour % 12 == 0 ? 12 : timestamp.hour % 12;
+    String minute =
+        timestamp.minute < 10 ? '0${timestamp.minute}' : '${timestamp.minute}';
+    String month =
+        timestamp.month < 10 ? '0${timestamp.month}' : '${timestamp.month}';
+    String day = timestamp.day < 10 ? '0${timestamp.day}' : '${timestamp.day}';
+    return '$hour:$minute $amPm - $day/$month/${timestamp.year}';
   }
 }
