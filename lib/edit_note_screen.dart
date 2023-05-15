@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'note.dart';
+import 'sum_api.dart';
+import 'trans_api.dart';
 
 class EditNoteScreen extends StatefulWidget {
   final Note note;
@@ -25,6 +27,40 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
       HighlightColor.blue: Colors.blue,
     };
     _commentsController = TextEditingController();
+  }
+
+  void _addComment([String? apiComment]) async {
+    String comment = apiComment ?? _commentsController.text.trim();
+    if (comment.isEmpty) {
+      try {
+        // Get a summary of the note's content
+        String summary = await getSummary(_contentController.text);
+        // Add the comment and summary to the note
+        setState(() {
+          widget.note.comments.add('$comment - Summary: $summary');
+        });
+        _commentsController.clear();
+      } catch (error) {
+        print('Error: $error');
+      }
+    }
+  }
+
+  void _addTranslation([String? apiTranslation]) async {
+    String comment = apiTranslation ?? _commentsController.text.trim();
+    if (comment.isEmpty) {
+      try {
+        // Get a summary of the note's content
+        String translation = await getTranslation(_contentController.text);
+        // Add the comment and summary to the note
+        setState(() {
+          widget.note.comments.add('$comment - Summary: $translation');
+        });
+        _commentsController.clear();
+      } catch (error) {
+        print('Error: $error');
+      }
+    }
   }
 
   @override
@@ -101,6 +137,14 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                   }
                 },
                 child: Text('Add Comment'),
+              ),
+              ElevatedButton(
+                onPressed: _addComment,
+                child: Text('Add Comment with API'),
+              ),
+              ElevatedButton(
+                onPressed: _addTranslation,
+                child: Text('Add Translation with API'),
               ),
             ],
           ),
